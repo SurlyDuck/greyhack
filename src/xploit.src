@@ -1,0 +1,36 @@
+if params.len() < 4 then
+	exit("Usage:: " + program_path.split("/")[-1] + " [ip_address] [port] [mem_address] [str]")
+end if
+
+xploit = include_lib("lib/metaxploit.so")
+if not xploit then
+	exit("Metaxploit.so not found")
+end if
+
+ip_address = params[0]
+port = params[1].val()
+mem_address = params[2]
+str = params[3]
+
+net_session = xploit.net_use(ip_address, port)
+if not net_session then
+	exit("Couldn't estabilish a net session, check the ip address and port")
+end if
+
+metalib = net_session.dump_lib()
+print("lib loaded: " + metalib.lib_name + " " + metalib.version)
+
+result = metalib.overflow(mem_address, str)
+if not result then
+	exit("failure")
+else if typeof(result) == "computer" then 
+	file = result.File("/etc/passwd")
+	if file then
+		print(file.get_content())
+	end if
+else if typeof(result) == "shell" then
+	result.start_terminal()
+end if
+
+print(typeof(result))
+
