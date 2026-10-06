@@ -1,3 +1,3 @@
-### GreyScript programs I made when in Grey Hack
+### GreyScript programs I made in Grey Hack
 
 -Just some GreyScript programs. Storing here for my personal use.
