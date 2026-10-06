@@ -1,0 +1,44 @@
+//GetXploits
+
+if params.len < 2 then
+	exit("Usage:: " + program_path.split("/")[-1] + " [ip_address] [port]")
+end if
+
+ip_address = params[0]
+port = params[1]
+
+metaxploit = include_lib("/lib/metaxploit.so")
+if metaxploit == null then
+	exit("Couldn't find metaxploit.so")
+end if
+
+net_session = metaxploit.net_use(ip_address, port.val())
+if net_session == null then 
+	exit("Couldn't connect to net session")
+end if
+
+metalib = net_session.dump_lib
+print("Metalib loaded: " + metalib.lib_name)
+print("Loading affected memory zones")
+
+list = metaxploit.scan(metalib)
+
+should_end = false
+while not should_end 
+	index = 0
+	for memory in list
+		print(index + " - [" + memory + "]")
+		index = index + 1	
+	end for
+
+	answ = user_input("Choose a zone: (-1 to quit): ")
+	if answ.val < 0 or answ.val > list.len then
+		should_end = true
+		continue
+	end if
+	
+	res = metaxploit.scan_address(metalib, list[answ.val])
+	print(res)
+
+end while
+
