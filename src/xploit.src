@@ -1,5 +1,7 @@
+// Use different xploits
+
 if params.len() < 4 then
-	exit("Usage:: " + program_path.split("/")[-1] + " [ip_address] [port] [mem_address] [str]")
+	exit("Usage:: " + program_path.split("/")[-1] + " [ip_address] [port] [mem_address] [str] [opt]")
 end if
 
 xploit = include_lib("lib/metaxploit.so")
@@ -11,6 +13,10 @@ ip_address = params[0]
 port = params[1].val()
 mem_address = params[2]
 str = params[3]
+opt = null
+if params.len >= 5 then
+	opt = params[4]
+end if
 
 net_session = xploit.net_use(ip_address, port)
 if not net_session then
@@ -20,7 +26,16 @@ end if
 metalib = net_session.dump_lib()
 print("lib loaded: " + metalib.lib_name + " " + metalib.version)
 
-result = metalib.overflow(mem_address, str)
+result = null
+if not opt then
+	result = metalib.overflow(mem_address, str)
+else 
+	print(opt)
+	result = metalib.overflow(mem_address, str, opt)
+end if 
+
+// TODO: handle different results
+// TODO: Use a REPL here and ask what the user wants to do instead of these standard actions
 if not result then
 	exit("failure")
 else if typeof(result) == "computer" then 
@@ -32,5 +47,4 @@ else if typeof(result) == "shell" then
 	result.start_terminal()
 end if
 
-print(typeof(result))
-
+print("Returned: " + typeof(result))

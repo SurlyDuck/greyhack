@@ -1,4 +1,4 @@
-//GetXploits
+//GetXploits remotely
 
 if params.len < 2 then
 	exit("Usage:: " + program_path.split("/")[-1] + " [ip_address] [port]")
