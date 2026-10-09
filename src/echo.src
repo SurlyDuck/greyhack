@@ -1,4 +1,4 @@
-// echo with stdout redirect since this OS don't supports it
+// echo with stdout redirect since this OS don't support it
 // Very bad code, still learning the quirks of this language.
 
 output=""
