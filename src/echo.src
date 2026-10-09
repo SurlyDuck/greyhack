@@ -1,0 +1,56 @@
+// echo with stdout redirect since this OS don't supports it
+// Very bad code, still learning the quirks of this language.
+
+output=""
+redirect = false
+redirect_file_path = ""
+
+for word in params
+	if word == ">" then
+		redirect = true
+		continue
+	else if redirect then
+		redirect_file_path  = word
+		break
+	else
+		output = output.insert(output.len, word + " " )
+	end if
+end for
+
+if not redirect or redirect_file_path == "" then
+	print(output)
+	exit
+end if
+	
+file = get_shell().host_computer.File(redirect_file_path)
+if not file then 
+	split_path = redirect_file_path.split("/")
+	final_path = ""
+	file_name  = ""
+	if split_path.len() < 2 then 
+		// User is passing just the file, use the current path
+		final_path = current_path()
+		file_name  = redirect_file_path
+	else
+		// User is using full path
+		// Get the file name (last item) and reconstruct the path string
+		file_name = split_path[-1]
+		for subdir in split_path
+			if subdir == split_path[split_path.len()-1] then
+				break
+			end if
+		
+			final_path = final_path.insert(final_path.len, subdir + "/" )
+		end for
+	end if
+
+	final_path = get_abs_path(final_path)
+	get_shell().host_computer.touch(final_path, file_name)
+	file = get_shell().host_computer.File(final_path + "/" +file_name)
+	
+	if not file then 
+		exit("Couldn't create file: " + redirect_file_path)
+	end if
+end if
+
+file.set_content(file.get_content() + output)
