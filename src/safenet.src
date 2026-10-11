@@ -1,4 +1,12 @@
-encrypt_file = true
+crypto = include_lib("/lib/crypto.so")
+server_file_encrypt  = true
+server_file_path     = "/home/ORIG/Config"
+
+servers = {}
+servers.addresses = []
+servers.users     = []
+servers.passwords = []
+servers.status    = []
 
 menus = {}
 menus.title    = ["-- Main Menu --"]
@@ -8,6 +16,10 @@ menus.selection = 0
 safenet = {}
 safenet.states = {0:"main", 1:"exit"}
 safenet.menu = 0
+
+safenet.check_connection = function(address, user, pwd)
+	return typeof(get_shell().connect_service(address, 22, user, pwd)) == "shell"
+end function
 
 safenet.updt = function()
 	if safenet.menu == safenet.states.indexOf("main") then
@@ -51,6 +63,62 @@ end function
 safenet.init = function()
 	print("========= SafeNet v1.0.0 by oRiG =========", 1)
 	print("Searching for server files")
+	dir = get_shell().host_computer.File(server_file_path)
+	config_file = null
+	decrypted = false
+	pass = null
+	if dir.is_folder then
+		for file in dir.get_files()
+			if file.name.split("\.")[-1] == "srv" then
+				config_file = file
+				print("Found a server file!")
+				if crypto.is_encrypted(file.path) then
+					print("Server file is encrypted!")
+					pass = user_input("File password:", true)
+					result = crypto.decrypt(file.path, pass)
+					if not result then
+						print("Couldn't decrypt file: " + result)
+						config_file = null
+					end if
+					decrypted = true
+				end if
+				break
+			end if
+		end for
+	end if
+
+	if not config_file then
+		print("Couldn't load server file")
+	else
+		config_content = config_file.get_content().split("_")
+		
+		for server in config_content
+			fields = server.split(",")
+			servers.addresses.push(fields[0])
+			servers.users.push(fields[1])
+			servers.passwords.push(fields[2])
+			servers.status.push(false)
+		end for
+		
+		if decrypted then
+			crypto.encrypt(config_file.path, pass)
+		end if
+		
+		print("Servers found: " + servers.addresses.len())
+		
+		if servers.addresses.len() > 0 then
+			for id in range(servers.addresses.len()-1 )
+				servers.status[id] = safenet.check_connection(servers.addresses[id], servers.users[id], servers.passwords[id])
+				if servers.status[id] then
+					print(servers.addresses[id] + " --> OK")
+				else
+					print(servers.addresses[id] + " --> Unreachable")
+				end if
+			end for
+		end if
+	
+		user_input("Press enter to continue")
+	end if
 end function
 
 safenet.main = function()
@@ -61,4 +129,3 @@ safenet.main = function()
 end function
 
 safenet.main()
-
