@@ -1,0 +1,64 @@
+encrypt_file = true
+
+menus = {}
+menus.title    = ["-- Main Menu --"]
+menus.options   = [ ["Load server file", "Add servers", "Save", "Quit"] ]
+menus.selection = 0
+
+safenet = {}
+safenet.states = {0:"main", 1:"exit"}
+safenet.menu = 0
+
+safenet.updt = function()
+	if safenet.menu == safenet.states.indexOf("main") then
+		print("========= SafeNet v1.0.0 by oRiG =========", 1)
+		print(menus.title[safenet.menu], 1)
+		
+		use_selected_option = false
+		index = 0
+		for option in menus.options[safenet.menu]
+			if index == menus.selection then
+				print("[*] " + option, 1)
+			else
+				print("[ ] " + option, 1)
+			end if
+			index = index + 1
+		end for
+		
+		options_count = menus.options[safenet.menu].len()
+		key = user_input("", false, true)
+		if key == "DownArrow" then
+			menus.selection = (menus.selection + 1) % options_count
+		else if key == "UpArrow" then
+			menus.selection = (((menus.selection - 1) % options_count) + options_count) % options_count
+		else if key == "RightArrow" then
+			use_selected_option = true
+		end if
+		
+		if use_selected_option then
+			if menus.options[safenet.menu][menus.selection] == "Quit" then
+				safenet.menu = safenet.states.indexOf("exit")
+			end if
+		end if
+		
+	else if safenet.menu == safenet.states.indexOf("exit") then
+		exit()
+	else
+		exit("Unreacheable")
+	end if
+end function
+
+safenet.init = function()
+	print("========= SafeNet v1.0.0 by oRiG =========", 1)
+	print("Searching for server files")
+end function
+
+safenet.main = function()
+	safenet.init()
+	while true
+		safenet.updt()
+	end while
+end function
+
+safenet.main()
+
