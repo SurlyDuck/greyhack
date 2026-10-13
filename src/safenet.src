@@ -5,7 +5,7 @@
 //_
 //69.169.69.169,dummy_user,dummy_pass,
 
-
+// TODO: cannot test the servers beforehand since this leaves traces
 
 crypto = include_lib("/lib/crypto.so")
 server_file_encrypt  = true
@@ -18,12 +18,12 @@ servers.passwords = []
 servers.status    = []
 
 menus = {}
-menus.title    = ["-- Main Menu --", "-- New server --", "-- Saving --", ""]
-menus.options   = [ ["Load server file", "Add servers", "Save", "Quit"], [], [] ]
+menus.title    = ["-- Main Menu --", "-- New server --", "-- Saving --", "-- Proxy list --", ""]
+menus.options   = [ ["Load server file", "Add servers", "Save", "Connect", "Quit"], [], [], [] ]
 menus.selection = 0
 
 safenet = {}
-safenet.states = { 0:"main", 1:"new_server", 2:"save", 3:"exit" }
+safenet.states = { 0:"main", 1:"new_server", 2:"save", 3:"connect", 4:"exit" }
 safenet.menu = 0
 
 //------- Utilities -------
@@ -91,6 +91,9 @@ safenet.updt = function()
 			else if menus.options[safenet.menu][menus.selection] == "Save" then
 				safenet.menu = safenet.states.indexOf("save")
 				menus.selection = 0
+			else if menus.options[safenet.menu][menus.selection] == "Connect" then
+				safenet.menu = safenet.states.indexOf("connect")
+				menus.selection = 0
 			end if
 		end if
 		
@@ -150,6 +153,56 @@ safenet.updt = function()
 		if encryption then
 			crypto.encrypt(file.path, pass)
 		end if
+	
+		print("Config file saved successfully")
+		user_input("Press ENTER to continue")
+		safenet.set_new_state("main")
+		
+		return
+	else if safenet.menu == safenet.states.indexOf("connect") then
+		print(menus.title[safenet.menu], 1)
+		if safenet.get_online_servers().len() == 0 then
+			print("There are no servers to connect to. Add it or load from file.")
+			user_input("Press ENTER to continue", false, true, false)
+			safenet.set_new_state("main")
+			return
+		end if
+		
+		print("Available servers:",1)
+		print(get_shell().host_computer.public_ip + " <-- You are here",1)
+		// TODO: the user must choose the servers to connect to and the order of connection
+		for server_id in range(servers.addresses.len()-1)
+			if not servers.status[server_id] then continue end if
+			print(servers.addresses[server_id],1)
+		end for
+		
+		if not yorn("Start routing?") then return safenet.set_new_state("main") end if
+		
+		//clear_screen()
+		
+		//TODO: error checking
+		current_shell = null
+		for server_id in range(servers.addresses.len()-1)
+			if not servers.status[server_id] then continue end if
+			if not current_shell then 
+				current_shell = get_shell()
+				print(current_shell.host_computer.public_ip + " OK")
+			end if
+			
+			current_shell = current_shell.connect_service(servers.addresses[server_id], 22, servers.users[server_id], servers.passwords[server_id])
+			
+			if not current_shell then
+				exit("Failure during routing of server: " + servers.addresses[server_id])
+				break
+			end if
+			print(current_shell.host_computer.public_ip + " OK")
+		end for
+	
+		if yorn("All done. Get shell?") then 
+			current_shell.start_terminal() 
+		else 
+			safenet.set_new_state("main") 
+		end if
 		
 	else
 		exit("Unreacheable")
@@ -170,9 +223,9 @@ safenet.init = function()
 				print("Found a server file!")
 				if crypto.is_encrypted(file.path) then
 					print("Server file is encrypted!")
-					pass = user_input("File password:", true)
+					pass = user_input("File password: ", true)
 					result = crypto.decrypt(file.path, pass)
-					if not result then
+					if typeof(result) == "string" then
 						print("Couldn't decrypt file: " + result)
 						config_file = null
 					end if
